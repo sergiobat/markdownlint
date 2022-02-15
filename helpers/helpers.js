@@ -26,11 +26,6 @@ module.exports.orderedListItemMarkerRe = /^[\s>]*0*(\d+)[.)]/;
 // Regular expression for all instances of emphasis markers
 const emphasisMarkersRe = /[_*]/g;
 
-// Regular expression for inline links and shortcut reference links
-const linkRe =
-  /(\[(?:[^[\]]?(?:\[[^[\]]*\])?)*\])(\([^)]*\)|\[[^\]]*\])?/g;
-module.exports.linkRe = linkRe;
-
 // Regular expression for link reference definition lines
 module.exports.linkReferenceRe = /^ {0,3}\[[^\]]+]:\s.*$/;
 
@@ -648,6 +643,25 @@ module.exports.frontMatterHasTitle =
       frontMatterLines.some((line) => frontMatterTitleRe.test(line));
   };
 
+// Regular expression for inline links and shortcut reference links
+const linkRe =
+  /(\[(?:[^[\]]?(?:\[[^[\]]*\])?)*\])(\([^)]*\)|\[[^\]]*\])?/g;
+
+/**
+ * Calles the provided function for each link.
+ *
+ * @param {string} line Line of markdown input.
+ * @param {Function} handler Function taking (index, link, text, destination).
+ * @returns {void}
+ */
+function forEachLink(line, handler) {
+  let linkMatch = null;
+  while ((linkMatch = linkRe.exec(line))) {
+    handler(linkMatch.index, linkMatch[0], linkMatch[1], linkMatch[2]);
+  }
+}
+module.exports.forEachLink = forEachLink;
+
 /**
  * Returns a list of emphasis markers in code spans and links.
  *
@@ -660,13 +674,12 @@ function emphasisMarkersInContent(params) {
   // Search links
   lines.forEach((tokenLine, tokenLineIndex) => {
     const inLine = [];
-    let linkMatch = null;
-    while ((linkMatch = linkRe.exec(tokenLine))) {
+    forEachLink(tokenLine, (index, match) => {
       let markerMatch = null;
-      while ((markerMatch = emphasisMarkersRe.exec(linkMatch[0]))) {
-        inLine.push(linkMatch.index + markerMatch.index);
+      while ((markerMatch = emphasisMarkersRe.exec(match))) {
+        inLine.push(index + markerMatch.index);
       }
-    }
+    });
     byLine[tokenLineIndex] = inLine;
   });
   // Search code spans

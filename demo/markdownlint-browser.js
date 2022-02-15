@@ -49,9 +49,6 @@ module.exports.listItemMarkerRe = /^([\s>]*)(?:[*+-]|\d+[.)])\s+/;
 module.exports.orderedListItemMarkerRe = /^[\s>]*0*(\d+)[.)]/;
 // Regular expression for all instances of emphasis markers
 var emphasisMarkersRe = /[_*]/g;
-// Regular expression for inline links and shortcut reference links
-var linkRe = /(\[(?:[^[\]]?(?:\[[^[\]]*\])?)*\])(\([^)]*\)|\[[^\]]*\])?/g;
-module.exports.linkRe = linkRe;
 // Regular expression for link reference definition lines
 module.exports.linkReferenceRe = /^ {0,3}\[[^\]]+]:\s.*$/;
 // All punctuation characters (normal and full-width)
@@ -630,6 +627,22 @@ module.exports.frontMatterHasTitle =
         return !ignoreFrontMatter &&
             frontMatterLines.some(function (line) { return frontMatterTitleRe.test(line); });
     };
+// Regular expression for inline links and shortcut reference links
+var linkRe = /(\[(?:[^[\]]?(?:\[[^[\]]*\])?)*\])(\([^)]*\)|\[[^\]]*\])?/g;
+/**
+ * Calles the provided function for each link.
+ *
+ * @param {string} line Line of markdown input.
+ * @param {Function} handler Function taking (index, link, text, destination).
+ * @returns {void}
+ */
+function forEachLink(line, handler) {
+    var linkMatch = null;
+    while ((linkMatch = linkRe.exec(line))) {
+        handler(linkMatch.index, linkMatch[0], linkMatch[1], linkMatch[2]);
+    }
+}
+module.exports.forEachLink = forEachLink;
 /**
  * Returns a list of emphasis markers in code spans and links.
  *
@@ -642,13 +655,12 @@ function emphasisMarkersInContent(params) {
     // Search links
     lines.forEach(function (tokenLine, tokenLineIndex) {
         var inLine = [];
-        var linkMatch = null;
-        while ((linkMatch = linkRe.exec(tokenLine))) {
+        forEachLink(tokenLine, function (index, match) {
             var markerMatch = null;
-            while ((markerMatch = emphasisMarkersRe.exec(linkMatch[0]))) {
-                inLine.push(linkMatch.index + markerMatch.index);
+            while ((markerMatch = emphasisMarkersRe.exec(match))) {
+                inLine.push(index + markerMatch.index);
             }
-        }
+        });
         byLine[tokenLineIndex] = inLine;
     });
     // Search code spans
@@ -4035,7 +4047,7 @@ module.exports = {
 "use strict";
 // @ts-check
 
-var _a = __webpack_require__(/*! ../helpers */ "../helpers/helpers.js"), addErrorDetailIf = _a.addErrorDetailIf, bareUrlRe = _a.bareUrlRe, escapeForRegExp = _a.escapeForRegExp, forEachLine = _a.forEachLine, overlapsAnyRange = _a.overlapsAnyRange, linkRe = _a.linkRe, linkReferenceRe = _a.linkReferenceRe;
+var _a = __webpack_require__(/*! ../helpers */ "../helpers/helpers.js"), addErrorDetailIf = _a.addErrorDetailIf, bareUrlRe = _a.bareUrlRe, escapeForRegExp = _a.escapeForRegExp, forEachLine = _a.forEachLine, forEachLink = _a.forEachLink, overlapsAnyRange = _a.overlapsAnyRange, linkReferenceRe = _a.linkReferenceRe;
 var _b = __webpack_require__(/*! ./cache */ "../lib/cache.js"), codeBlockAndSpanRanges = _b.codeBlockAndSpanRanges, lineMetadata = _b.lineMetadata;
 module.exports = {
     "names": ["MD044", "proper-names"],
@@ -4057,12 +4069,11 @@ module.exports = {
                 while ((match = bareUrlRe.exec(line)) !== null) {
                     exclusions.push([lineIndex, match.index, match[0].length]);
                 }
-                while ((match = linkRe.exec(line)) !== null) {
-                    var text = match[1], destination = match[2];
+                forEachLink(line, function (index, _, text, destination) {
                     if (destination) {
-                        exclusions.push([lineIndex, match.index + text.length, destination.length]);
+                        exclusions.push([lineIndex, index + text.length, destination.length]);
                     }
-                }
+                });
             }
         });
         if (!includeCodeBlocks) {

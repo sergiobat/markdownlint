@@ -1000,3 +1000,41 @@ test("deepFreeze", (t) => {
     t.throws(scenario, null, "Assigned to frozen object.");
   });
 });
+
+test("forEachLink", (t) => {
+  t.plan(12);
+  const testCases = [
+    [
+      "",
+      []
+    ],
+    [
+      "Text",
+      []
+    ],
+    [
+      "Text [link](destination) text",
+      [ [ 5, "[link](destination)", "[link]", "(destination)" ] ]
+    ],
+    [
+      "Text [link0](destination0) text [link1](destination1) text",
+      [
+        [ 5, "[link0](destination0)", "[link0]", "(destination0)" ],
+        [ 32, "[link1](destination1)", "[link1]", "(destination1)" ]
+      ]
+    ]
+  ];
+  for (const testCase of testCases) {
+    const [ markdown, matches ] = testCase;
+    // @ts-ignore
+    helpers.forEachLink(markdown, (idx, lnk, txt, des) => {
+      // @ts-ignore
+      const match = matches.shift();
+      const [ index, link, text, destination ] = match;
+      t.is(idx, index);
+      t.is(lnk, link);
+      t.is(txt, text);
+      t.is(des, destination);
+    });
+  }
+});
