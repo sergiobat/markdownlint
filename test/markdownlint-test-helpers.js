@@ -1002,7 +1002,7 @@ test("deepFreeze", (t) => {
 });
 
 test("forEachLink", (t) => {
-  t.plan(12);
+  t.plan(108);
   const testCases = [
     [
       "",
@@ -1011,6 +1011,14 @@ test("forEachLink", (t) => {
     [
       "Text",
       []
+    ],
+    [
+      "Text [text] (text) text",
+      [ [ 5, "[text]", "[text]", undefined ] ]
+    ],
+    [
+      "Text [text] text (text) text",
+      [ [ 5, "[text]", "[text]", undefined ] ]
     ],
     [
       "Text [link](destination) text",
@@ -1022,19 +1030,158 @@ test("forEachLink", (t) => {
         [ 5, "[link0](destination0)", "[link0]", "(destination0)" ],
         [ 32, "[link1](destination1)", "[link1]", "(destination1)" ]
       ]
+    ],
+    [
+      "Text [link0] text [link1](destination1) text [link2] text",
+      [
+        [ 5, "[link0]", "[link0]", undefined ],
+        [ 18, "[link1](destination1)", "[link1]", "(destination1)" ],
+        [ 45, "[link2]", "[link2]", undefined ]
+      ]
+    ],
+    [
+      "Text [link0](destination0) text [link1] text [link2](destination2) text",
+      [
+        [ 5, "[link0](destination0)", "[link0]", "(destination0)" ],
+        [ 32, "[link1]", "[link1]", undefined ],
+        [ 45, "[link2](destination2)", "[link2]", "(destination2)" ]
+      ]
+    ],
+    [
+      "Text [link](destination \"title\") text",
+      [
+        [
+          5,
+          "[link](destination \"title\")",
+          "[link]",
+          "(destination \"title\")"
+        ]
+      ]
+    ],
+    [
+      "Text [link](destination \"ti\\\"tle\") text",
+      [
+        [
+          5,
+          "[link](destination \"ti\\\"tle\")",
+          "[link]",
+          "(destination \"ti\\\"tle\")"
+        ]
+      ]
+    ],
+    [
+      "Text [link](destination 'title') text",
+      [
+        [
+          5,
+          "[link](destination 'title')",
+          "[link]",
+          "(destination 'title')"
+        ]
+      ]
+    ],
+    // [
+    //   "Text [link](destination (title)) text",
+    //   [
+    //     [
+    //       5,
+    //       "[link](destination (title))",
+    //       "[link]",
+    //       "(destination (title))"
+    //     ]
+    //   ]
+    // ],
+    [
+      "[]()",
+      [ [ 0, "[]()", "[]", "()" ] ]
+    ],
+    [
+      "[l](d)",
+      [ [ 0, "[l](d)", "[l]", "(d)" ] ]
+    ],
+    [
+      "Text [li[nk](dest) text",
+      [ [ 8, "[nk](dest)", "[nk]", "(dest)" ] ]
+    ],
+    // [
+    //   "Text [li\[nk](dest) text",
+    //   [ [ 5, "li\[nk](dest)", "li\[nk]", "(dest)" ] ]
+    // ],
+    // [
+    //   "Text [li]nk](dest) text",
+    //   []
+    // ],
+    // [
+    //   "Text [li\]nk](dest) text",
+    //   [ [ 5, "li\]nk](dest)", "li\]nk]", "(dest)" ] ]
+    // ],
+    [
+      "Text [l[in]k](dest) text",
+      [ [ 5, "[l[in]k](dest)", "[l[in]k]", "(dest)" ] ]
+    ],
+    // [
+    //   "Text [link](de(st) text",
+    //   []
+    // ],
+    [
+      "Text [link](de\\(st) text",
+      [ [ 5, "[link](de\\(st)", "[link]", "(de\\(st)" ] ]
+    ],
+    [
+      "Text [link](de)st) text",
+      [ [ 5, "[link](de)", "[link]", "(de)" ] ]
+    ],
+    // [
+    //   "Text [link](de\)st) text",
+    //   [ [ 5, "[link](de\)st)", "[link]", "(de\)st)" ] ]
+    // ],
+    // [
+    //   "Text [link](d(es)t) text",
+    //   [ [ 5, "[link](d(es)t)", "[link]", "(d(es)t)" ] ]
+    // ],
+    [
+      "Text [link]() text",
+      [ [ 5, "[link]()", "[link]", "()" ] ]
+    ],
+    [
+      "Text [link](#) text",
+      [ [ 5, "[link](#)", "[link]", "(#)" ] ]
+    ],
+    [
+      "Text [link](<>) text",
+      [ [ 5, "[link](<>)", "[link]", "(<>)" ] ]
+    ],
+    [
+      "Text [link](<dest>) text",
+      [ [ 5, "[link](<dest>)", "[link]", "(<dest>)" ] ]
+    ],
+    [
+      "Text [link](<de st>) text",
+      [ [ 5, "[link](<de st>)", "[link]", "(<de st>)" ] ]
+    ],
+    // [
+    //   "Text [link](<de)st>) text",
+    //   [ [ 5, "[link](<de)st>)", "[link]", "(<de)st>)" ] ]
+    // ],
+    [
+      "Text [link][reference] text",
+      [ [ 5, "[link][reference]", "[link]", "[reference]" ] ]
+    ],
+    [
+      "Text [link][refer]ence] text",
+      [ [ 5, "[link][refer]", "[link]", "[refer]" ] ]
     ]
   ];
   for (const testCase of testCases) {
     const [ markdown, matches ] = testCase;
-    // @ts-ignore
-    helpers.forEachLink(markdown, (idx, lnk, txt, des) => {
+    helpers.forEachLink(String(markdown), (idx, lnk, txt, des) => {
       // @ts-ignore
       const match = matches.shift();
       const [ index, link, text, destination ] = match;
-      t.is(idx, index);
-      t.is(lnk, link);
-      t.is(txt, text);
-      t.is(des, destination);
+      t.is(idx, index, String(markdown));
+      t.is(lnk, link, String(markdown));
+      t.is(txt, text, String(markdown));
+      t.is(des, destination, String(markdown));
     });
   }
 });
